@@ -1,0 +1,8 @@
+flask
+torch
+transformers
+accelerate
+sentencepiece
+requests
+beautifulsoup4
+werkzeug
