@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Sentimiento SEC con Qwen2-0.5B</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f4f6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 40px auto;
+            background: white;
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+        }
+
+        h1 {
+            text-align: center;
+            color: #111827;
+        }
+
+        .subtitulo {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #374151;
+            display: block;
+            margin-top: 18px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            margin-top: 8px;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #d1d5db;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 14px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .error {
+            margin-top: 25px;
+            padding: 15px;
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 5px solid #dc2626;
+            border-radius: 10px;
+        }
+
+        .resultado {
+            margin-top: 30px;
+            padding: 20px;
+            background: #ecfdf5;
+            border-left: 5px solid #059669;
+            border-radius: 10px;
+            white-space: pre-wrap;
+        }
+
+        .parcial {
+            margin-top: 20px;
+            padding: 18px;
+            background: #f9fafb;
+            border-left: 5px solid #6b7280;
+            border-radius: 10px;
+            white-space: pre-wrap;
+        }
+
+        .preview {
+            margin-top: 25px;
+            padding: 15px;
+            background: #eef2ff;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #374151;
+            white-space: pre-wrap;
+        }
+
+        .nota {
+            margin-top: 25px;
+            font-size: 14px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        @media (max-width: 750px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .ayuda {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Analizador de Sentimiento SEC</h1>
+
+        <p class="subtitulo">
+            App local usando Flask y Qwen2-0.5B-Instruct sin API keys externas
+        </p>
+
+        <form method="POST" enctype="multipart/form-data">
+
+            <label for="archivo">Subir archivo de la SEC</label>
+            <input type="file" id="archivo" name="archivo" accept=".txt,.html,.htm">
+            <div class="ayuda">
+                Puedes subir archivos .txt, .html o .htm descargados desde la SEC.
+            </div>
+
+            <label for="url">O pegar URL de la SEC</label>
+            <input 
+                type="text" 
+                id="url" 
+                name="url" 
+                placeholder="Ejemplo: https://www.sec.gov/Archives/edgar/data/..."
+            >
+
+            <label for="contacto">Correo o identificador para User-Agent SEC</label>
+            <input 
+                type="text" 
+                id="contacto" 
+                name="contacto" 
+                placeholder="tu_correo@example.com"
+            >
+            <div class="ayuda">
+                Recomendado cuando usas URL de la SEC.
+            </div>
+
+            <label for="tipo_analisis">Tipo de análisis</label>
+            <select id="tipo_analisis" name="tipo_analisis">
+                <option value="completo">Analizar documento completo</option>
+                <option value="seccion">Analizar solo una sección</option>
+            </select>
+
+            <div class="grid">
+                <div>
+                    <label for="inicio_seccion">Inicio de sección</label>
+                    <input 
+                        type="text" 
+                        id="inicio_seccion" 
+                        name="inicio_seccion" 
+                        placeholder="Ejemplo: Item 1A. Risk Factors"
+                    >
+                </div>
+
+                <div>
+                    <label for="fin_seccion">Fin de sección</label>
+                    <input 
+                        type="text" 
+                        id="fin_seccion" 
+                        name="fin_seccion" 
+                        placeholder="Ejemplo: Item 1B"
+                    >
+                </div>
+            </div>
+
+            <div class="ayuda">
+                Para una sección puedes usar inicios como “Item 1A”, “Risk Factors”, “Item 7” o “Management's Discussion”.
+            </div>
+
+            <button type="submit">Analizar sentimiento</button>
+        </form>
+
+        {% if error %}
+            <div class="error">
+                <strong>Error:</strong> {{ error }}
+            </div>
+        {% endif %}
+
+        {% if resultado_final %}
+            <div class="resultado">
+                <h2>Resultado general</h2>
+                {{ resultado_final }}
+            </div>
+        {% endif %}
+
+        {% if resultados_parciales %}
+            <h2>Análisis parciales</h2>
+
+            {% for analisis in resultados_parciales %}
+                <div class="parcial">
+                    <strong>Fragmento {{ loop.index }}:</strong>
+
+                    {{ analisis }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if texto_usado %}
+            <div class="preview">
+                <strong>Fuente:</strong> {{ fuente }}
+
+                <br><br>
+                <strong>Longitud del texto analizado:</strong> {{ longitud_texto }} caracteres
+
+                <br><br>
+                <strong>Vista previa del texto usado:</strong>
+                <br>
+                {{ texto_usado }}
+            </div>
+        {% endif %}
+
+        <p class="nota">
+            Nota: El objetivo de esta actividad es demostrar el uso local de un LLM para análisis de sentimiento. 
+            No importa si el sentimiento no es perfecto.
+        </p>
+    </div>
+
+</body>
+</html>
